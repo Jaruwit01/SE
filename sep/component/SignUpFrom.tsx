@@ -1,12 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, TextInput, StyleSheet,  Text, TouchableOpacity,Modal} from 'react-native';
-import SelectDropdown from 'react-native-select-dropdown'
-import DatePicker from 'react-native-datepicker';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, Modal } from 'react-native';
+import SelectDropdown from 'react-native-select-dropdown';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
-
 
 SplashScreen.preventAutoHideAsync();
 export default function SignUpForm() {
@@ -21,10 +19,13 @@ export default function SignUpForm() {
   const [mode, setMode] = useState('date');
   const [passwordError, setPasswordError] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
-  
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
 
 
-  
+
+
   const [fontsLoaded] = useFonts({
     'Kanit-Thin': require('../assets/font/Kanit/Kanit-Thin.ttf'),
     'Kanit-Light': require('../assets/font/Kanit/Kanit-Light.ttf'),
@@ -34,9 +35,10 @@ export default function SignUpForm() {
     'Kanit-Bold': require('../assets/font/Kanit/Kanit-Bold.ttf'),
     'Kanit-ExtraBold': require('../assets/font/Kanit/Kanit-ExtraBold.ttf'),
     'Kanit-Black': require('../assets/font/Kanit/Kanit-Black.ttf'),
-
   });
-  const Gender = ['Mail','Femail', 'Orther'];
+
+  const Gender = ['Mail', 'Femail', 'Orther'];
+
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
       await SplashScreen.hideAsync();
@@ -48,15 +50,9 @@ export default function SignUpForm() {
   }
 
   const handleSignUp = () => {
-    // Check if all required fields are filled
-    if (!name || !email || !password || !confirmPassword || !sex || !dateOfBirth) {
-      console.log('Please fill in all required fields');
-      // You can show an error message or handle it in a way that suits your UI/UX
-      return;
-    }
-  
     // Check if password meets the requirements
     const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+  
     if (!passwordRegex.test(password)) {
       setPasswordError('Password must be at least 8 characters, including one digit, one lowercase, and one uppercase letter.');
       return;
@@ -64,9 +60,8 @@ export default function SignUpForm() {
   
     // Check if password and confirm password match
     if (password !== confirmPassword) {
-      console.log('Password and Confirm Password do not match');
-      // You can show an error message or handle it in a way that suits your UI/UX
-      setConfirmPasswordBorderColor('red');
+      setConfirmPasswordError('Passwords do not match.');
+      setConfirmPasswordBorderColor('orange');
       return;
     }
   
@@ -86,13 +81,10 @@ export default function SignUpForm() {
     setSex('');
     setDateOfBirth(new Date());
   
-    // Reset the confirm password border color
+    // Reset the confirm password border color and error message
     setConfirmPasswordBorderColor('gray');
-  
-    // Reset isFormValid to disable the "CONTINUE" button
-    setIsFormValid(false);
+    setConfirmPasswordError('');
   };
-  
   
   const showMode = (currentMode) => {
     setShow(true);
@@ -106,39 +98,51 @@ export default function SignUpForm() {
   const hideDatePicker = () => {
     setShow(false);
   };
+
   const handleChange = (event, selectedDate) => {
     if (selectedDate !== undefined) {
       setDateOfBirth(selectedDate);
+      setIsFormValid(!!selectedDate && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth && !!name);
+
+      
     }
     hideDatePicker();
   };
-  
+
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
-        
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={{fontFamily:'kanit-Thin', marginBottom:20, fontWeight:'bold', fontSize:12, color:'#A0A0A0'}}>Enter the fields below to target started </Text>
-
-        <Text style={styles.labelTextInput} nativeID='Name'>Name</Text>
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={{ fontFamily: 'kanit-Thin', marginBottom: 20, fontWeight: 'bold', fontSize: 12, color: '#A0A0A0' }}>
+        Enter the fields below to target started{' '}
+      </Text>
+    <View style={styles.inputBox}>
+      <Text style={styles.labelTextInput} nativeID="Name">
+        Name
+      </Text>
       <TextInput
         style={styles.input}
         value={name}
         onChangeText={(text) => {
           setName(text);
-          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth);}}
+          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth && !!name);
+        }}
       />
+    </View>
+      <View style={styles.inputBox}>
         <Text style={styles.labelTextInput}>Email</Text>
       <TextInput
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
-        onChangeText={(text) => {setEmail(text);
-          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth);}
-        }
-        
+        onChangeText={(text) => {
+          setEmail(text);
+          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth && !!name);
+        }}
       />
-      <Text style={styles.labelTextInput}>Password</Text>
+      </View>
+      <View style={styles.inputBox}>
+        <Text style={styles.labelTextInput}>Password</Text>
       <TextInput
         style={[styles.input, { borderColor: passwordError ? 'red' : 'gray' }]}
         secureTextEntry
@@ -146,78 +150,94 @@ export default function SignUpForm() {
         onChangeText={(text) => {
           setPassword(text);
           setPasswordError('');
-          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth);
+          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth && !!name);
         }}
         onBlur={() => {
           const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
           if (!passwordRegex.test(password)) {
-            setPasswordError('Password must be at least 8 characters, including one digit, one lowercase, and one uppercase letter.');
+            setPasswordError(
+              'Password must be at least 8 characters, including one digit, one lowercase, and one uppercase letter.'
+            );
           } else {
             setPasswordError('');
           }
         }}
       />
       {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-        <Text style={styles.labelTextInput}>Confirm Password</Text>
-      <TextInput
-        style={[styles.input, { borderColor: confirmPasswordBorderColor }]}
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={(text) => {setConfirmPassword(text);
-          setIsFormValid(!!text && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth);}}
-        onBlur={() => {
-          setConfirmPasswordBorderColor(password === confirmPassword && password !== '' && confirmPassword !=='' ? 'green' : 'red' );
-          
-        }}
-      />
-      
+      </View>
+      <View style={styles.inputBox}>
+      <Text style={styles.labelTextInput}>Confirm Password</Text>
+<TextInput
+  style={[
+    styles.input,
+    { borderColor: passwordsMatch ? 'green' : (confirmPasswordError ? 'orange' : 'gray')},
+  ]}
+  secureTextEntry
+  value={confirmPassword}
+  onChangeText={(text) => {
+    setConfirmPassword(text);
+    setPasswordsMatch(false); // Reset the success message when the user is typing
+    setConfirmPasswordError('');
+  }}
+  onBlur={() => {
+    if ( password !== confirmPassword) {
+      setConfirmPasswordError('Passwords do not match.');
+      setPasswordsMatch(false);
+    } else {
+      setConfirmPasswordError('');
+      setPasswordsMatch(true);
+    }
+  }}
+/>
+{passwordsMatch ?(
+  <Text style={styles.successText}>Passwords match!</Text>
+):null}
+{confirmPasswordError ? (
+  <Text style={styles.focusText}>{confirmPasswordError}</Text>
+) : null}
+
+
+      </View>
+     
+
       <View style={styles.Group_dropdown}>
-        <View style={styles.dropdown} >
-           <Text style={styles.labelTextInput} >Sex</Text>
-      <SelectDropdown
-      data={Gender}
-      onSelect={(selectedItem, index) => {
-        setSex(selectedItem)
-        }}
-        buttonStyle={styles.select_dropdown}
-      />
+        <View style={styles.sex}>
+          <Text style={styles.labelTextInput}>Sex</Text>
+          <SelectDropdown data={Gender} onSelect={(selectedItem, index) => {setSex(selectedItem);
+                    setIsFormValid(!!selectedItem && !!email && !!password && !!confirmPassword && !!sex && !!dateOfBirth && !!name);
+                  }
+
+          } buttonStyle={styles.select_dropdown} />
         </View>
-        <View style={styles.dropdown}>
-          <Text style={styles.labelTextInput}>Date of Birth</Text> 
-        <TouchableOpacity onPress={showDatePicker}>
-        <TextInput 
-        style={styles.select_dropdown}
-        value={format(dateOfBirth, 'dd/MM/yyyy')}
-        editable={false}
-        
-        
-        />
-        </TouchableOpacity>
+        <View style={styles.dateOfBirth}>
+          <Text style={styles.labelTextInput}>Date of Birth</Text>
+          <TouchableOpacity onPress={showDatePicker}>
+            <TextInput style={styles.select_dropdown} value={format(dateOfBirth, 'dd/MM/yyyy')} editable={false} />
+          </TouchableOpacity>
 
-           {show && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={dateOfBirth}
-            mode='date'
-            is24Hour={true}
-            display="default"
-            onChange={handleChange}
-          />
-        )}
+          {show && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={dateOfBirth}
+              mode="date"
+              is24Hour={true}
+              display="default"
+              onChange={handleChange}
+            />
+          )}
+        </View>
       </View>
 
-      </View>
-      
-      
-<TouchableOpacity onPress={handleSignUp}
-  style={[styles.submitButton, { backgroundColor: isFormValid ? '#0068C6' : '#A0A0A0' }]}
-  disabled={!isFormValid}>
-  <Text style={styles.textButton}>CONTINUE</Text>
-</TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleSignUp}
+        style={[styles.submitButton, { backgroundColor: isFormValid ? '#0068C6' : '#57A8E8' }]}
+        disabled={!isFormValid}>
+        <Text style={styles.textButton}>CONTINUE</Text>
+      </TouchableOpacity>
     </View>
-      );
-};
-``
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -230,12 +250,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom:0,
     paddingLeft: 8,
     borderRadius: 30,
     backgroundColor: '#ffffff',
-
-    
   },
   title: {
     fontSize: 18,
@@ -257,55 +275,59 @@ const styles = StyleSheet.create({
   },
   labelTextInput: {
     fontFamily: 'Kanit-Thin',
-    fontSize:12,
+    fontSize: 12,
     color: '#A0A0A0',
     fontWeight: 'bold',
-
+    marginBottom: 0,
   },
-
   Group_dropdown: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    justifyContent: 'center',
-    padding: 5,
-    
+    justifyContent: 'space-between',
+    marginTop:8,
+    marginRight: 10,
   },
-  select_dropdown:{
+  select_dropdown: {
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
     borderRadius: 30,
     backgroundColor: '#ffffff',
-    width: "90%",
+    width: '90%',
     textAlign: 'center',
-    fontSize : 13,
+    fontSize: 13,
     fontWeight: 'bold',
   },
-  dropdown:{
-    padding: 10,
+  sex:{
+    
     width: '55%',
   },
+
+  dateOfBirth:{
+    width: '55%',
+  },
+
   datePickerStyle: {
     width: 200,
     marginTop: 20,
   },
-  centerView:{
+  centerView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 22,
   },
-  modalView:{
-    margin:20,
+  modalView: {
+    margin: 20,
     backgroundColor: '#fff',
-    borderRadius:20,
+    borderRadius: 20,
     width: '90%',
     padding: 35,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
-      width:0,
-      height:2
+      width: 0,
+      height: 2,
     },
     shadowOpacity: 1,
     shadowRadius: 4,
@@ -313,9 +335,20 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    fontSize: 6,
+    fontSize: 8,
     marginTop: 0,
   },
-  
+  successText: {
+    color: 'green',
+    fontSize: 8,
+    marginTop: 0,
+  },
+  inputBox: {
+    marginBottom: 18,
+  },
+  focusText: {
+  color: 'orange',
+  fontSize: 8,
+  marginTop: 0,
+},
 });
-
