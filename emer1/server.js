@@ -26,7 +26,7 @@ app.post('/signup', (req, res) => {
   }
 
   // Save data to Firebase Realtime Database
-  const usersRef = db.ref('users');
+  var usersRef = db.ref('users');
   usersRef.push({
     name,
     email,
